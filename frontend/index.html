@@ -3,16 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portulu - Ordina Online, te lo portiamo a casa</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <title>Portulu - Test</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide-static/dist/lucide.js"></script>
 </head>
-<body>
-  <div id="root"></div>
-  
-  <!-- App Cliente -->
-  <script type="text/babel" src="app.js"></script>
+<body class="bg-gray-50">
+  <div class="max-w-md mx-auto min-h-screen">
+    <!-- Header -->
+    <div class="bg-orange-500 text-white p-6 rounded-b-3xl shadow-lg">
+      <h1 class="text-3xl font-bold mb-2">🛵 Portulu</h1>
+      <p class="text-orange-100">Food Delivery Test Page</p>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6">
+      <div class="bg-white rounded-2xl shadow-md p-6 mb-4">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">✅ Frontend Funziona!</h2>
+        <p class="text-gray-600 mb-4">Questa è una pagina di test per verificare che Vercel funzioni correttamente.</p>
+        
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <p class="text-green-800 font-semibold">✓ HTML caricato</p>
+          <p class="text-green-800 font-semibold">✓ Tailwind CSS funzionante</p>
+          <p class="text-green-800 font-semibold">✓ Vercel deployment OK</p>
+        </div>
+
+        <button 
+          onclick="testBackend()" 
+          class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition"
+        >
+          🔌 Testa Connessione Backend
+        </button>
+      </div>
+
+      <!-- Backend Test Result -->
+      <div id="result" class="hidden bg-white rounded-2xl shadow-md p-6">
+        <h3 class="text-lg font-bold mb-2">Risultato Test Backend:</h3>
+        <div id="resultContent" class="text-sm"></div>
+      </div>
+
+      <!-- Links -->
+      <div class="bg-white rounded-2xl shadow-md p-6 mt-4">
+        <h3 class="text-lg font-bold mb-3">🔗 Link App</h3>
+        <div class="space-y-2">
+          <a href="/index.html" class="block p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+            📱 App Cliente
+          </a>
+          <a href="/ristorante.html" class="block p-3 bg-green-50 rounded-lg hover:bg-green-100 transition">
+            🍽️ Dashboard Ristoratore
+          </a>
+          <a href="/rider.html" class="block p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+            🛵 App Rider
+          </a>
+        </div>
+      </div>
+
+      <!-- Debug Info -->
+      <div class="bg-white rounded-2xl shadow-md p-6 mt-4">
+        <h3 class="text-lg font-bold mb-3">🐛 Debug Info</h3>
+        <div class="text-sm space-y-1 text-gray-600">
+          <p><strong>URL:</strong> <span id="currentUrl"></span></p>
+          <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+          <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Populate debug info
+    document.getElementById('currentUrl').textContent = window.location.href;
+    document.getElementById('userAgent').textContent = navigator.userAgent.substring(0, 50) + '...';
+    document.getElementById('timestamp').textContent = new Date().toLocaleString('it-IT');
+
+    // Test backend connection
+    async function testBackend() {
+      const resultDiv = document.getElementById('result');
+      const contentDiv = document.getElementById('resultContent');
+      
+      resultDiv.classList.remove('hidden');
+      contentDiv.innerHTML = '<p class="text-gray-500">⏳ Testing backend connection...</p>';
+
+      // Try to read API URL from api-config.js if exists
+      let apiUrl = 'https://portulu-api.onrender.com'; // Default
+      
+      try {
+        if (typeof API_URL !== 'undefined') {
+          apiUrl = API_URL;
+        }
+      } catch (e) {
+        console.log('api-config.js not found, using default URL');
+      }
+
+      try {
+        const response = await fetch(apiUrl + '/health', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          contentDiv.innerHTML = `
+            <div class="bg-green-50 border border-green-200 rounded p-3">
+              <p class="text-green-800 font-bold">✅ Backend Online!</p>
+              <p class="text-green-700 text-xs mt-2">API URL: ${apiUrl}</p>
+              <p class="text-green-700 text-xs">Status: ${data.status}</p>
+              <p class="text-green-700 text-xs">Timestamp: ${data.timestamp}</p>
+            </div>
+          `;
+        } else {
+          throw new Error('Backend returned: ' + response.status);
+        }
+      } catch (error) {
+        contentDiv.innerHTML = `
+          <div class="bg-red-50 border border-red-200 rounded p-3">
+            <p class="text-red-800 font-bold">❌ Backend Non Raggiungibile</p>
+            <p class="text-red-700 text-xs mt-2">Errore: ${error.message}</p>
+            <p class="text-red-700 text-xs mt-2">URL tentato: ${apiUrl}</p>
+            <div class="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+              <p class="text-yellow-800 text-xs font-semibold">💡 Possibili cause:</p>
+              <ul class="text-yellow-700 text-xs mt-1 space-y-1 ml-4 list-disc">
+                <li>Backend non ancora deployato su Render</li>
+                <li>Backend in sleep (free tier Render)</li>
+                <li>URL backend sbagliato in api-config.js</li>
+                <li>CORS non configurato</li>
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Auto-test on load
+    setTimeout(() => {
+      console.log('Auto-testing backend connection...');
+      testBackend();
+    }, 1000);
+  </script>
 </body>
 </html>
