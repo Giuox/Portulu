@@ -3,17 +3,552 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portulu - Rider</title>
-
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <title>Portulu - App Rider</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div id="root"></div>
+<body class="bg-gray-50">
+  <div id="app" class="max-w-md mx-auto min-h-screen pb-20"></div>
 
-  <script src="api-config.js"></script>
-  <script type="text/babel" src="rider.js"></script>
+  <script>
+    const API_URL = 'https://portulu-api.onrender.com';
+    
+    let state = {
+      view: 'deliveries',
+      riderStatus: 'online',
+      user: { name: 'Luca Messina', id: 1 },
+      deliveries: [],
+      earnings: {
+        today: 45.50,
+        week: 234.80,
+        deliveriesToday: 12,
+        deliveriesWeek: 67
+      },
+      loading: false
+    };
+
+    // Dati mock consegne
+    const mockDeliveries = [
+      {
+        id: 1,
+        order_number: 'ORD001',
+        status: 'ready',
+        rider_id: null,
+        restaurant: {
+          name: 'Antica Trattoria Siciliana',
+          address: 'Via Mormino Penna 12, Scicli',
+          phone: '+39 0932 841234'
+        },
+        customer: {
+          name: 'Mario Rossi',
+          address: 'Via Roma 45, Scicli Centro',
+          phone: '+39 333 1234567'
+        },
+        items: [
+          { name: 'Pasta alla Norma', quantity: 2 },
+          { name: 'Arancini', quantity: 3 }
+        ],
+        total: 36,
+        delivery_fee: 0,
+        payment_method: 'Contanti',
+        delivery_zone: 'Scicli Centro',
+        distance: '1.2 km',
+        estimatedTime: '8 min',
+        notes: 'Citofono al secondo piano'
+      },
+      {
+        id: 2,
+        order_number: 'ORD002',
+        status: 'delivering',
+        rider_id: 1,
+        restaurant: {
+          name: 'Pizzeria Da Nino',
+          address: 'Corso Mazzini 89, Scicli',
+          phone: '+39 0932 845678'
+        },
+        customer: {
+          name: 'Giuseppe Battaglia',
+          address: 'Lungomare Mediterraneo 12, Sampieri',
+          phone: '+39 345 9876543'
+        },
+        items: [
+          { name: 'Margherita', quantity: 2 },
+          { name: 'Diavola', quantity: 1 }
+        ],
+        total: 23,
+        delivery_fee: 3,
+        payment_method: 'Carta',
+        delivery_zone: 'Sampieri',
+        distance: '8.5 km',
+        estimatedTime: '12 min',
+        notes: ''
+      },
+      {
+        id: 3,
+        order_number: 'ORD003',
+        status: 'ready',
+        rider_id: null,
+        restaurant: {
+          name: 'Pescheria Del Mare',
+          address: 'Via Porto 23, Donnalucata',
+          phone: '+39 0932 847890'
+        },
+        customer: {
+          name: 'Anna Greco',
+          address: 'Via Pola 8, Donnalucata',
+          phone: '+39 340 5551234'
+        },
+        items: [
+          { name: 'Spaghetti allo Scoglio', quantity: 1 },
+          { name: 'Frittura Mista', quantity: 1 }
+        ],
+        total: 34,
+        delivery_fee: 3,
+        payment_method: 'Contanti',
+        delivery_zone: 'Donnalucata',
+        distance: '6.3 km',
+        estimatedTime: '10 min',
+        notes: 'Portare resto per 50€'
+      }
+    ];
+
+    state.deliveries = mockDeliveries;
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        ${renderHeader()}
+        ${renderTabs()}
+        <div class="p-4">
+          ${state.view === 'deliveries' ? renderDeliveries() : ''}
+          ${state.view === 'earnings' ? renderEarnings() : ''}
+        </div>
+        ${state.riderStatus === 'offline' ? renderOfflineBar() : ''}
+      `;
+    }
+
+    function renderHeader() {
+      return `
+        <div class="bg-orange-500 text-white p-6 sticky top-0 z-10 shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h1 class="text-2xl font-bold">🛵 Portulu Rider</h1>
+              <p class="text-orange-100 text-sm">${state.user.name}</p>
+            </div>
+            <button
+              onclick="toggleStatus()"
+              class="px-4 py-2 rounded-full font-semibold text-sm transition ${
+                state.riderStatus === 'online'
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : 'bg-gray-500 hover:bg-gray-600'
+              }"
+            >
+              ${state.riderStatus === 'online' ? '🟢 Online' : '⚫ Offline'}
+            </button>
+          </div>
+
+          <div class="bg-orange-600 rounded-lg p-3 flex items-center justify-between">
+            <div>
+              <div class="text-sm text-orange-100">Guadagno Oggi</div>
+              <div class="text-2xl font-bold">€${state.earnings.today.toFixed(2)}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-orange-100">Consegne</div>
+              <div class="text-2xl font-bold">${state.earnings.deliveriesToday}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabs() {
+      return `
+        <div class="bg-white shadow-md sticky top-36 z-10">
+          <div class="flex">
+            <button 
+              onclick="changeView('deliveries')"
+              class="flex-1 py-4 font-semibold transition-colors ${
+                state.view === 'deliveries' 
+                  ? 'text-orange-500 border-b-2 border-orange-500' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }"
+            >
+              📦 Consegne
+            </button>
+            <button 
+              onclick="changeView('earnings')"
+              class="flex-1 py-4 font-semibold transition-colors ${
+                state.view === 'earnings' 
+                  ? 'text-orange-500 border-b-2 border-orange-500' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }"
+            >
+              💰 Guadagni
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDeliveries() {
+      const available = state.deliveries.filter(d => d.status === 'ready' && !d.rider_id);
+      const myActive = state.deliveries.filter(d => 
+        d.rider_id === state.user.id && ['ready', 'delivering'].includes(d.status)
+      );
+      const myCompleted = state.deliveries.filter(d => 
+        d.rider_id === state.user.id && d.status === 'delivered'
+      );
+
+      return `
+        ${available.length > 0 ? `
+          <div class="mb-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                ${available.length}
+              </span>
+              🔔 Disponibili
+            </h2>
+            ${available.map(renderDeliveryCard).join('')}
+          </div>
+        ` : ''}
+
+        ${myActive.length > 0 ? `
+          <div class="mb-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
+                ${myActive.length}
+              </span>
+              🛵 Le Mie Consegne
+            </h2>
+            ${myActive.map(renderDeliveryCard).join('')}
+          </div>
+        ` : ''}
+
+        ${myCompleted.length > 0 ? `
+          <div class="mb-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                ${myCompleted.length}
+              </span>
+              ✅ Completate Oggi
+            </h2>
+            ${myCompleted.slice(0, 5).map(d => `
+              <div class="bg-white rounded-lg shadow-sm p-4 mb-2 opacity-75">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <span class="font-semibold">#${d.order_number}</span>
+                    <span class="text-sm text-gray-500 ml-2">${d.delivery_zone}</span>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-green-600 font-semibold">€${d.delivery_fee.toFixed(2)}</div>
+                    <div class="text-xs text-gray-500">✓ Consegnato</div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${available.length === 0 && myActive.length === 0 && !state.loading ? `
+          <div class="text-center py-12 text-gray-500">
+            <div class="text-6xl mb-4">📦</div>
+            <p class="text-lg font-semibold">Nessuna consegna disponibile</p>
+            <p class="text-sm mt-2">Le nuove consegne appariranno qui</p>
+            ${state.riderStatus === 'offline' ? `
+              <button 
+                onclick="toggleStatus()"
+                class="mt-4 bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600"
+              >
+                🟢 Vai Online
+              </button>
+            ` : ''}
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function renderDeliveryCard(delivery) {
+      const statusColors = {
+        ready: 'bg-blue-100 text-blue-700 border-blue-300',
+        delivering: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+        delivered: 'bg-green-100 text-green-700 border-green-300'
+      };
+
+      const statusLabels = {
+        ready: 'Pronto',
+        delivering: 'In Consegna',
+        delivered: 'Consegnato'
+      };
+
+      const isAvailable = delivery.status === 'ready' && !delivery.rider_id;
+      const isMyDelivery = delivery.rider_id === state.user.id;
+
+      return `
+        <div class="bg-white rounded-xl shadow-md p-4 mb-3 border-l-4 border-orange-500">
+          <div class="flex justify-between mb-3">
+            <div>
+              <span class="font-bold text-lg">#${delivery.order_number}</span>
+              <span class="ml-2 text-xs px-2 py-1 rounded-full border ${statusColors[delivery.status]}">
+                ${statusLabels[delivery.status]}
+              </span>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-green-500">
+                €${delivery.delivery_fee.toFixed(2)}
+              </div>
+              <div class="text-xs text-gray-500">Guadagno</div>
+            </div>
+          </div>
+
+          ${isAvailable ? `
+            <div class="bg-blue-50 rounded-lg p-3 mb-3">
+              <div class="font-semibold mb-2 text-gray-800 flex items-center gap-2">
+                🏪 <span>Ritira da:</span>
+              </div>
+              <div class="text-sm">
+                <div class="font-semibold">${delivery.restaurant.name}</div>
+                <div class="text-gray-600 mt-1">📍 ${delivery.restaurant.address}</div>
+                <div class="text-gray-600">📞 ${delivery.restaurant.phone}</div>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="bg-orange-50 rounded-lg p-3 mb-3">
+            <div class="font-semibold mb-2 text-gray-800 flex items-center gap-2">
+              📦 <span>Consegna a:</span>
+            </div>
+            <div class="text-sm">
+              <div class="font-semibold">${delivery.customer.name}</div>
+              <div class="text-gray-600 mt-1">📍 ${delivery.customer.address}</div>
+              <div class="text-gray-600">📞 ${delivery.customer.phone}</div>
+              <div class="text-gray-500 mt-2 flex items-center gap-3">
+                <span>🚗 ${delivery.distance}</span>
+                <span>⏱️ ${delivery.estimatedTime}</span>
+                <span class="font-semibold text-orange-600">${delivery.payment_method}</span>
+              </div>
+            </div>
+          </div>
+
+          ${delivery.notes ? `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3 text-sm">
+              <div class="flex items-start gap-2">
+                <span class="text-yellow-600">⚠️</span>
+                <div>
+                  <span class="font-semibold text-yellow-800">Note:</span>
+                  <span class="text-yellow-700"> ${delivery.notes}</span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <div class="text-sm font-semibold text-gray-700 mb-2">Articoli:</div>
+            ${delivery.items.map(item => `
+              <div class="text-sm text-gray-600">• ${item.quantity}x ${item.name}</div>
+            `).join('')}
+          </div>
+
+          <div class="flex gap-2 mb-2">
+            <button
+              onclick="openNavigation('${delivery.customer.address}')"
+              class="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
+            >
+              🗺️ Naviga
+            </button>
+            <button
+              onclick="callPhone('${delivery.customer.phone}')"
+              class="bg-gray-200 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-300 transition"
+            >
+              📞
+            </button>
+          </div>
+
+          <div class="flex gap-2">
+            ${isAvailable ? `
+              <button
+                onclick="assignDelivery(${delivery.id})"
+                class="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition"
+              >
+                ✓ Accetta Consegna
+              </button>
+            ` : ''}
+            ${isMyDelivery && delivery.status === 'ready' ? `
+              <button
+                onclick="updateDeliveryStatus(${delivery.id}, 'delivering')"
+                class="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition"
+              >
+                🚀 Inizia Consegna
+              </button>
+            ` : ''}
+            ${isMyDelivery && delivery.status === 'delivering' ? `
+              <button
+                onclick="updateDeliveryStatus(${delivery.id}, 'delivered')"
+                class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+              >
+                ✓ Consegnato
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderEarnings() {
+      return `
+        <div class="space-y-4">
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">💰 Guadagni Oggi</h2>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-5xl font-bold text-green-500">€${state.earnings.today.toFixed(2)}</div>
+                <div class="text-sm text-gray-600 mt-2">Incassato</div>
+              </div>
+              <div class="text-center p-4 bg-orange-50 rounded-lg">
+                <div class="text-5xl font-bold text-orange-500">${state.earnings.deliveriesToday}</div>
+                <div class="text-sm text-gray-600 mt-2">Consegne</div>
+              </div>
+            </div>
+            <div class="mt-4 pt-4 border-t text-center">
+              <div class="text-sm text-gray-600">Media per consegna</div>
+              <div class="text-3xl font-bold text-blue-500 mt-2">
+                €${(state.earnings.today / state.earnings.deliveriesToday).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📅 Questa Settimana</h2>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-5xl font-bold text-purple-500">€${state.earnings.week.toFixed(2)}</div>
+                <div class="text-sm text-gray-600 mt-2">Incassato</div>
+              </div>
+              <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-5xl font-bold text-blue-500">${state.earnings.deliveriesWeek}</div>
+                <div class="text-sm text-gray-600 mt-2">Consegne</div>
+              </div>
+            </div>
+            <div class="mt-4 pt-4 border-t text-center">
+              <div class="text-sm text-gray-600">Media per consegna</div>
+              <div class="text-3xl font-bold text-blue-500 mt-2">
+                €${(state.earnings.week / state.earnings.deliveriesWeek).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-bold">🎯 Obiettivo Settimanale</h2>
+              <div class="text-3xl">📈</div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-sm mb-2">
+                  <span>Consegne (${state.earnings.deliveriesWeek}/80)</span>
+                  <span class="font-semibold">${Math.round((state.earnings.deliveriesWeek / 80) * 100)}%</span>
+                </div>
+                <div class="w-full bg-orange-400 rounded-full h-3">
+                  <div 
+                    class="bg-white h-3 rounded-full transition-all" 
+                    style="width: ${Math.min((state.earnings.deliveriesWeek / 80) * 100, 100)}%"
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-2">
+                  <span>Guadagno (€${state.earnings.week.toFixed(0)}/€300)</span>
+                  <span class="font-semibold">${Math.round((state.earnings.week / 300) * 100)}%</span>
+                </div>
+                <div class="w-full bg-orange-400 rounded-full h-3">
+                  <div 
+                    class="bg-white h-3 rounded-full transition-all" 
+                    style="width: ${Math.min((state.earnings.week / 300) * 100, 100)}%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-md p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Statistiche Totali</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center py-2 border-b">
+                <span class="text-gray-600">Rating</span>
+                <span class="font-bold text-yellow-500 text-xl">⭐ 4.9</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b">
+                <span class="text-gray-600">Consegne Totali</span>
+                <span class="font-bold text-gray-800 text-xl">456</span>
+              </div>
+              <div class="flex justify-between items-center py-2">
+                <span class="text-gray-600">Tempo Medio</span>
+                <span class="font-bold text-blue-500 text-xl">18 min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderOfflineBar() {
+      return `
+        <div class="fixed bottom-0 left-0 right-0 bg-red-500 text-white p-4 text-center font-semibold shadow-lg z-20">
+          ⚠️ Sei Offline - Non riceverai nuove consegne
+        </div>
+      `;
+    }
+
+    function changeView(view) {
+      state.view = view;
+      render();
+    }
+
+    function toggleStatus() {
+      state.riderStatus = state.riderStatus === 'online' ? 'offline' : 'online';
+      render();
+    }
+
+    function assignDelivery(deliveryId) {
+      const delivery = state.deliveries.find(d => d.id === deliveryId);
+      if (delivery) {
+        delivery.rider_id = state.user.id;
+        delivery.status = 'ready';
+        render();
+      }
+    }
+
+    function updateDeliveryStatus(deliveryId, newStatus) {
+      const delivery = state.deliveries.find(d => d.id === deliveryId);
+      if (delivery) {
+        delivery.status = newStatus;
+        
+        if (newStatus === 'delivered') {
+          state.earnings.today += delivery.delivery_fee;
+          state.earnings.deliveriesToday += 1;
+        }
+        
+        render();
+      }
+    }
+
+    function openNavigation(address) {
+      const encoded = encodeURIComponent(address);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encoded}`, '_blank');
+    }
+
+    function callPhone(phone) {
+      window.location.href = `tel:${phone}`;
+    }
+
+    // Init
+    render();
+
+    // Simula nuove consegne ogni 45 secondi (per demo)
+    setInterval(() => {
+      if (state.riderStatus === 'online' && Math.random() > 0.6) {
+        console.log('🔔 Nuova consegna disponibile!');
+        // In produzione, questo arriva da WebSocket
+      }
+    }, 45000);
+  </script>
 </body>
 </html>
