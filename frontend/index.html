@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portulu - Ordina Online</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <!-- API Config -->
+  <script src="api-config.js"></script>
+  
+  <!-- App Cliente Component -->
+  <script type="text/babel">
+    // INCOLLA QUI IL CODICE DELL'APP CLIENTE (dal primo artifact)
+    // Sostituisci i dati mock con chiamate API usando `api.get()`, `api.post()`, etc.
+    
+    // Esempio di utilizzo API:
+    // const zones = await api.get('/api/zones');
+    // const restaurants = await api.get('/api/restaurants?zone=centro');
+    
+    const App = () => {
+      // ... codice app cliente ...
+      return <div>App Cliente</div>;
+    };
+    
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
