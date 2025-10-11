@@ -1,8 +1,7 @@
 // Usa React globale (UMD) e Lucide globale
 const { useState, useEffect } = React;
-const { ShoppingCart, MapPin, Clock, Star, Search, User, Menu, X, ChevronRight, Phone, Package } = lucide;
+const { ShoppingCart, MapPin, Clock, Star, Search, User, ChevronRight } = lucide;
 
-// Tutto il codice del componente PortuluApp qui dentro
 const PortuluApp = () => {
   const [currentView, setCurrentView] = useState('home');
   const [selectedZone, setSelectedZone] = useState('');
@@ -12,7 +11,7 @@ const PortuluApp = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [orderStatus, setOrderStatus] = useState(null);
 
-  // Dati mock - Zone di consegna
+  // Dati mock - Zone
   const zones = [
     { id: 'centro', name: 'Scicli Centro', fee: 0 },
     { id: 'sampieri', name: 'Sampieri', fee: 3 },
@@ -74,8 +73,7 @@ const PortuluApp = () => {
     }
   ];
 
-  // Filtra ristoranti per zona selezionata
-  const filteredRestaurants = restaurants.filter(r => 
+  const filteredRestaurants = restaurants.filter(r =>
     !selectedZone || r.zones.includes(selectedZone)
   ).filter(r =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -85,7 +83,7 @@ const PortuluApp = () => {
   const addToCart = (item) => {
     const existingItem = cart.find(i => i.id === item.id);
     if (existingItem) {
-      setCart(cart.map(i => 
+      setCart(cart.map(i =>
         i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
       ));
     } else {
@@ -96,7 +94,7 @@ const PortuluApp = () => {
   const removeFromCart = (itemId) => {
     const item = cart.find(i => i.id === itemId);
     if (item.quantity > 1) {
-      setCart(cart.map(i => 
+      setCart(cart.map(i =>
         i.id === itemId ? { ...i, quantity: i.quantity - 1 } : i
       ));
     } else {
@@ -121,40 +119,29 @@ const PortuluApp = () => {
     setCurrentView('tracking');
   };
 
-  // View: Zone Selection
+  // Componenti View semplificate
   const ZoneSelectionView = () => (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-orange-500 text-white p-6 pb-24 rounded-b-3xl">
         <h1 className="text-3xl font-bold mb-2">Portulu</h1>
         <p className="text-orange-100">U megghiu delivery di Sicilia</p>
       </div>
-      
       <div className="px-4 -mt-16">
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <MapPin className="text-orange-500" size={24} />
-            <h2 className="text-xl font-bold">Unni vuliti ca portamu?</h2>
-          </div>
-          
           <div className="space-y-3">
             {zones.map(zone => (
               <button
                 key={zone.id}
-                onClick={() => {
-                  setSelectedZone(zone.id);
-                  setCurrentView('home');
-                }}
-                className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all flex items-center justify-between group"
+                onClick={() => { setSelectedZone(zone.id); setCurrentView('home'); }}
+                className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all flex items-center justify-between"
               >
                 <div className="text-left">
-                  <div className="font-semibold text-gray-800 group-hover:text-orange-600">
-                    {zone.name}
-                  </div>
+                  <div className="font-semibold text-gray-800">{zone.name}</div>
                   <div className="text-sm text-gray-500">
                     Consegna: {zone.fee === 0 ? 'Gratis' : `€${zone.fee.toFixed(2)}`}
                   </div>
                 </div>
-                <ChevronRight className="text-gray-400 group-hover:text-orange-500" />
+                <ChevronRight size={20} />
               </button>
             ))}
           </div>
@@ -163,337 +150,54 @@ const PortuluApp = () => {
     </div>
   );
 
-  // View: Home/Restaurant List
   const HomeView = () => (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-orange-500 text-white p-6 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">Portulu</h1>
-            <button 
-              onClick={() => setCurrentView('zones')}
-              className="text-sm text-orange-100 flex items-center gap-1 mt-1"
-            >
-              <MapPin size={14} />
-              {zones.find(z => z.id === selectedZone)?.name}
-            </button>
-          </div>
-          <button onClick={() => setMenuOpen(!menuOpen)}>
-            <User size={24} />
-          </button>
-        </div>
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Cerca ristoranti..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-300"
-          />
-        </div>
+        <h1 className="text-2xl font-bold">Portulu</h1>
       </div>
-
       <div className="p-4 space-y-4">
         {filteredRestaurants.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            Nessun ristorante disponibile in questa zona
-          </div>
+          <div className="text-center py-12 text-gray-500">Nessun ristorante disponibile</div>
         ) : (
-          filteredRestaurants.map(restaurant => (
-            <button
-              key={restaurant.id}
-              onClick={() => {
-                setSelectedRestaurant(restaurant);
-                setCurrentView('menu');
-              }}
-              className="w-full bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="text-5xl">{restaurant.image}</div>
-                  <div className="flex-1 text-left">
-                    <h3 className="font-bold text-lg text-gray-800">{restaurant.name}</h3>
-                    <p className="text-sm text-gray-500">{restaurant.category}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="text-yellow-500 fill-current" size={14} />
-                        <span className="font-semibold">{restaurant.rating}</span>
-                        <span className="text-gray-400">({restaurant.reviews})</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Clock size={14} />
-                        {restaurant.deliveryTime}
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      Ordine minimo: €{restaurant.minOrder}
-                    </div>
-                  </div>
-                </div>
+          filteredRestaurants.map(r => (
+            <button key={r.id} onClick={() => { setSelectedRestaurant(r); setCurrentView('menu'); }}
+              className="w-full bg-white rounded-2xl shadow-md p-4 flex items-center gap-4">
+              <div className="text-4xl">{r.image}</div>
+              <div>
+                <h3 className="font-bold text-gray-800">{r.name}</h3>
+                <p className="text-sm text-gray-500">{r.category}</p>
               </div>
             </button>
           ))
         )}
       </div>
-
-      {cart.length > 0 && (
-        <button
-          onClick={() => setCurrentView('cart')}
-          className="fixed bottom-6 left-6 right-6 bg-orange-500 text-white py-4 rounded-xl shadow-lg flex items-center justify-between px-6 hover:bg-orange-600 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <ShoppingCart size={20} />
-            <span className="font-semibold">{cart.length} articoli</span>
-          </div>
-          <span className="font-bold">€{cartTotal.toFixed(2)}</span>
-        </button>
-      )}
     </div>
   );
 
-  // View: Menu
-  const MenuView = () => {
-    const categories = [...new Set(selectedRestaurant.menu.map(item => item.category))];
-    
-    return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <div className="bg-orange-500 text-white p-6">
-          <button onClick={() => setCurrentView('home')} className="mb-4">
-            ← Indietro
-          </button>
-          <div className="flex items-start gap-4">
-            <div className="text-5xl">{selectedRestaurant.image}</div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">{selectedRestaurant.name}</h1>
-              <p className="text-orange-100">{selectedRestaurant.category}</p>
-              <div className="flex items-center gap-3 mt-2 text-sm">
-                <div className="flex items-center gap-1">
-                  <Star className="fill-current" size={14} />
-                  {selectedRestaurant.rating}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock size={14} />
-                  {selectedRestaurant.deliveryTime}
-                </div>
-              </div>
-            </div>
+  const MenuView = () => (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <button onClick={() => setCurrentView('home')} className="mb-4 text-orange-500">← Indietro</button>
+      <h2 className="text-lg font-bold mb-4">{selectedRestaurant?.name}</h2>
+      {selectedRestaurant?.menu.map(item => (
+        <div key={item.id} className="bg-white p-4 rounded-xl mb-3 flex justify-between items-center">
+          <div>
+            <div>{item.name}</div>
+            <div className="text-orange-500 font-bold">€{item.price.toFixed(2)}</div>
           </div>
+          <button onClick={() => addToCart(item)} className="bg-orange-500 text-white px-3 py-1 rounded-lg">Aggiungi</button>
         </div>
-
-        <div className="p-4">
-          {categories.map(category => (
-            <div key={category} className="mb-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-3">{category}</h2>
-              <div className="space-y-3">
-                {selectedRestaurant.menu.filter(item => item.category === category).map(item => (
-                  <div key={item.id} className="bg-white rounded-xl p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                        <p className="text-orange-500 font-bold mt-1">€{item.price.toFixed(2)}</p>
-                      </div>
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors font-semibold"
-                      >
-                        Aggiungi
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {cart.length > 0 && (
-          <button
-            onClick={() => setCurrentView('cart')}
-            className="fixed bottom-6 left-6 right-6 bg-orange-500 text-white py-4 rounded-xl shadow-lg flex items-center justify-between px-6 hover:bg-orange-600 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={20} />
-              <span className="font-semibold">{cart.length} articoli</span>
-            </div>
-            <span className="font-bold">€{cartTotal.toFixed(2)}</span>
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  // View: Cart
-  const CartView = () => (
-    <div className="min-h-screen bg-gray-50 pb-32">
-      <div className="bg-orange-500 text-white p-6">
-        <button onClick={() => setCurrentView('menu')} className="mb-4">
-          ← Continua a ordinare
-        </button>
-        <h1 className="text-2xl font-bold">Il tuo carrello</h1>
-      </div>
-
-      <div className="p-4">
-        <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-          {cart.map(item => (
-            <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                <p className="text-sm text-gray-500">€{item.price.toFixed(2)} cad.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => removeFromCart(item.id)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold"
-                >
-                  -
-                </button>
-                <span className="font-semibold w-6 text-center">{item.quantity}</span>
-                <button
-                  onClick={() => addToCart(item)}
-                  className="w-8 h-8 rounded-full bg-orange-500 text-white hover:bg-orange-600 flex items-center justify-center font-bold"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-4 space-y-3">
-          <div className="flex justify-between text-gray-600">
-            <span>Subtotale</span>
-            <span>€{cartTotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-gray-600">
-            <span>Consegna</span>
-            <span>{deliveryFee === 0 ? 'Gratis' : `€${deliveryFee.toFixed(2)}`}</span>
-          </div>
-          <div className="border-t pt-3 flex justify-between font-bold text-lg">
-            <span>Totale</span>
-            <span className="text-orange-500">€{totalWithDelivery.toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
-        <button
-          onClick={placeOrder}
-          disabled={cartTotal < selectedRestaurant.minOrder}
-          className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-        >
-          {cartTotal < selectedRestaurant.minOrder 
-            ? `Ordine minimo €${selectedRestaurant.minOrder}` 
-            : 'Conferma Ordine'}
-        </button>
-      </div>
+      ))}
     </div>
   );
 
-  // View: Order Tracking
-  const TrackingView = () => {
-    const [currentStatus, setCurrentStatus] = useState('confirmed');
-    
-    useEffect(() => {
-      const statuses = ['confirmed', 'preparing', 'ready', 'delivering', 'delivered'];
-      let index = 0;
-      const interval = setInterval(() => {
-        index++;
-        if (index < statuses.length) {
-          setCurrentStatus(statuses[index]);
-        } else {
-          clearInterval(interval);
-        }
-      }, 5000);
-      return () => clearInterval(interval);
-    }, []);
-
-    const statusSteps = [
-      { key: 'confirmed', label: 'Ordine Confermato', icon: '✓' },
-      { key: 'preparing', label: 'In Preparazione', icon: '👨‍🍳' },
-      { key: 'ready', label: 'Pronto', icon: '📦' },
-      { key: 'delivering', label: 'In Consegna', icon: '🛵' },
-      { key: 'delivered', label: 'Consegnato', icon: '🎉' }
-    ];
-
-    const currentIndex = statusSteps.findIndex(s => s.key === currentStatus);
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-orange-500 text-white p-6">
-          <h1 className="text-2xl font-bold">Traccia Ordine</h1>
-          <p className="text-orange-100">#{orderStatus.id}</p>
-        </div>
-
-        <div className="p-6">
-          <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-            <div className="text-center mb-6">
-              <div className="text-5xl mb-3">{statusSteps[currentIndex].icon}</div>
-              <h2 className="text-xl font-bold text-gray-800">{statusSteps[currentIndex].label}</h2>
-              <p className="text-gray-500 mt-2">
-                Tempo stimato: {orderStatus.estimatedTime}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {statusSteps.map((step, index) => (
-                <div key={step.key} className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                    index <= currentIndex ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400'
-                  }`}>
-                    {index < currentIndex ? '✓' : index + 1}
-                  </div>
-                  <div className={`flex-1 ${index <= currentIndex ? 'text-gray-800' : 'text-gray-400'}`}>
-                    <div className="font-semibold">{step.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-md p-4 mb-6">
-            <h3 className="font-bold text-gray-800 mb-3">Riepilogo Ordine</h3>
-            <div className="space-y-2">
-              {orderStatus.items.map(item => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.quantity}x {item.name}</span>
-                  <span>€{(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="border-t pt-2 flex justify-between font-bold">
-                <span>Totale</span>
-                <span className="text-orange-500">€{orderStatus.total.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setCurrentView('home');
-              setOrderStatus(null);
-            }}
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
-          >
-            Torna alla Home
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Render based on current view
   return (
     <div className="max-w-md mx-auto bg-white shadow-xl min-h-screen">
       {!selectedZone && currentView === 'home' && <ZoneSelectionView />}
       {selectedZone && currentView === 'home' && <HomeView />}
       {currentView === 'menu' && <MenuView />}
-      {currentView === 'cart' && <CartView />}
-      {currentView === 'tracking' && <TrackingView />}
-      {currentView === 'zones' && <ZoneSelectionView />}
     </div>
   );
 };
 
 // Render
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(<PortuluApp />, document.getElementById('root'));
