@@ -1,6 +1,7 @@
-alter table public.profiles add column if not exists rider_available boolean default false;
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS rider_available boolean DEFAULT false;
 
-create policy if not exists "riders update own availability" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
-
-
+CREATE POLICY "riders update own availability" ON public.profiles
+  FOR UPDATE
+  USING ( (SELECT auth.uid()) = id )
+  WITH CHECK ( (SELECT auth.uid()) = id );

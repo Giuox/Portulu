@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/src/lib/supabaseServer';
+import { supabaseServer } from '@/lib/supabaseServer';
 
 function getBearerToken(req: NextRequest): string | null {
   const auth = req.headers.get('authorization');
