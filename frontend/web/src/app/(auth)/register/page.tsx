@@ -1,11 +1,13 @@
 "use client";
 import { useState } from 'react';
 
+type Role = 'customer'|'restaurant'|'rider'|'admin';
+
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<'customer'|'restaurant'|'rider'|'admin'>('customer');
+  const [role, setRole] = useState<Role>('customer');
   const [loading, setLoading] = useState(false);
 
   async function register() {
@@ -36,7 +38,7 @@ export default function RegisterPage() {
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="w-full border rounded-lg p-3" />
           <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full border rounded-lg p-3" />
           <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full border rounded-lg p-3" />
-          <select value={role} onChange={e => setRole(e.target.value as any)} className="w-full border rounded-lg p-3">
+          <select value={role} onChange={e => setRole(e.target.value as Role)} className="w-full border rounded-lg p-3">
             <option value="customer">Cliente</option>
             <option value="restaurant">Ristorante</option>
             <option value="rider">Rider</option>
