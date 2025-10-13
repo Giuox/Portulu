@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   const [riders, setRiders] = useState<Profile[]>([]);
 
   useEffect(() => {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
+    if (!token) { window.location.href = '/login'; return; }
     (async () => {
       const [ordersRes, restaurantsRes] = await Promise.all([
         fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }),
