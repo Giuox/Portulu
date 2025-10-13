@@ -22,7 +22,7 @@ export default function RistorantePage() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
 
   const loadOrders = useCallback(async () => {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
+    if (!token) { window.location.href = '/login'; return; }
     setLoading(true);
     try {
       const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
