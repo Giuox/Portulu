@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Order = {
   id: number;
@@ -21,7 +21,7 @@ export default function RistorantePage() {
   const [loading, setLoading] = useState(false);
   const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
 
-  async function loadOrders() {
+  const loadOrders = useCallback(async () => {
     if (!token) { window.location.href = '/(auth)/login'; return; }
     setLoading(true);
     try {
@@ -34,7 +34,7 @@ export default function RistorantePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
   async function updateOrderStatus(id: number, status: Order['status']) {
     if (!token) return;
@@ -47,12 +47,13 @@ export default function RistorantePage() {
 
   useEffect(() => {
     loadOrders();
+    let unsub: (() => void) | undefined;
     (async () => {
       const { subscribeOrders } = await import('@/lib/realtime');
-      const unsub = subscribeOrders(loadOrders);
-      return () => unsub();
+      unsub = subscribeOrders(loadOrders);
     })();
-  }, []);
+    return () => { if (unsub) unsub(); };
+  }, [loadOrders]);
 
   const newOrders = orders.filter(o => o.status === 'new');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
