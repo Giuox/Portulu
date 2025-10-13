@@ -5,7 +5,6 @@ const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 if (!supabaseUrl || !supabaseAnon) {
   // In production this must be defined. Keeping a runtime check to avoid silent failures.
-  // eslint-disable-next-line no-console
   console.warn('Supabase env vars are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
