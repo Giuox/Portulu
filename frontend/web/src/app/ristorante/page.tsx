@@ -82,9 +82,12 @@ export default function RistorantePage() {
             <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Categoria" className="w-full border rounded-lg p-3" />
             <input value={minOrder} onChange={e => setMinOrder(Number(e.target.value))} type="number" step="0.01" placeholder="Ordine minimo" className="w-full border rounded-lg p-3" />
             <button onClick={async () => {
+              // Preflight to set CSRF
+              try { await fetch('/api/zones'); } catch {}
+              const { authHeaders } = await import('@/lib/csrf');
               const res = await fetch('/api/restaurants', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: { ...authHeaders(token || undefined), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, category, min_order: Number(minOrder) })
               });
               if (res.ok) {
