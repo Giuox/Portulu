@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 type Order = { id: number; order_number: string; status: string };
@@ -10,14 +10,14 @@ export default function TrackingPage() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
   const [order, setOrder] = useState<Order | null>(null);
 
-  async function loadOrders() {
+  const loadOrders = useCallback(async () => {
     if (!token) { window.location.href = '/(auth)/login'; return; }
     const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!res.ok) return;
-    const found = data.find((o: any) => o.order_number === orderNumber);
+    const found = (data as Order[]).find((o) => o.order_number === orderNumber);
     if (found) setOrder(found);
-  }
+  }, [token, orderNumber]);
 
   useEffect(() => {
     loadOrders();
@@ -27,7 +27,7 @@ export default function TrackingPage() {
       const t = setInterval(loadOrders, 15000); // fallback polling
       return () => { unsub(); clearInterval(t); };
     })();
-  }, [orderNumber]);
+  }, [orderNumber, loadOrders]);
 
   if (!order) return <div className="min-h-screen flex items-center justify-center">Ordine non trovato</div>;
 
