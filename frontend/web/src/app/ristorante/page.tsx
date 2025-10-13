@@ -20,9 +20,22 @@ export default function RistorantePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
+  const [hasRestaurant, setHasRestaurant] = useState<boolean | null>(null);
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [minOrder, setMinOrder] = useState<number>(0);
 
   const loadOrders = useCallback(async () => {
     if (!token) { window.location.href = '/login'; return; }
+    // Check if restaurant exists for this user
+    if (hasRestaurant === null) {
+      const meRes = await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } });
+      const me = meRes.ok ? await meRes.json() : null;
+      const listRes = await fetch('/api/restaurants');
+      const list = listRes.ok ? await listRes.json() : [];
+      const owned = list.find((r: any) => r.user_id === me?.id);
+      setHasRestaurant(Boolean(owned));
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
@@ -58,6 +71,35 @@ export default function RistorantePage() {
   const newOrders = orders.filter(o => o.status === 'new');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const readyOrders = orders.filter(o => o.status === 'ready');
+
+  if (hasRestaurant === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-xl mx-auto bg-white rounded-xl shadow p-6">
+          <h1 className="text-xl font-bold mb-4">Configura il tuo Ristorante</h1>
+          <div className="space-y-3">
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="w-full border rounded-lg p-3" />
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Categoria" className="w-full border rounded-lg p-3" />
+            <input value={minOrder} onChange={e => setMinOrder(Number(e.target.value))} type="number" step="0.01" placeholder="Ordine minimo" className="w-full border rounded-lg p-3" />
+            <button onClick={async () => {
+              const res = await fetch('/api/restaurants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ name, category, min_order: Number(minOrder) })
+              });
+              if (res.ok) {
+                setHasRestaurant(true);
+                await loadOrders();
+              } else {
+                const d = await res.json().catch(() => ({}));
+                alert(d.error || 'Errore creazione ristorante');
+              }
+            }} className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold">Crea Ristorante</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
