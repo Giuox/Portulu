@@ -44,7 +44,7 @@ export default function RestaurantMenuPage() {
   }, [deliveryZone]);
 
   async function placeOrder() {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
+    if (!token) { window.location.href = '/login'; return; }
     const body = {
       restaurant_id: restaurantId,
       items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, quantity: c.quantity })),
