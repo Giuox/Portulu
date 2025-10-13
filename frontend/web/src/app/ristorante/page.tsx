@@ -32,8 +32,8 @@ export default function RistorantePage() {
       const meRes = await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } });
       const me = meRes.ok ? await meRes.json() : null;
       const listRes = await fetch('/api/restaurants');
-      const list = listRes.ok ? await listRes.json() : [];
-      const owned = list.find((r: any) => r.user_id === me?.id);
+      const list = listRes.ok ? await listRes.json() as Array<{ user_id: string }>: [];
+      const owned = list.find((r) => r.user_id === me?.id);
       setHasRestaurant(Boolean(owned));
     }
     setLoading(true);
@@ -47,7 +47,7 @@ export default function RistorantePage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, hasRestaurant]);
 
   async function updateOrderStatus(id: number, status: Order['status']) {
     if (!token) return;
