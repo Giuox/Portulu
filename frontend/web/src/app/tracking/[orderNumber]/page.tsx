@@ -11,7 +11,7 @@ export default function TrackingPage() {
   const [order, setOrder] = useState<Order | null>(null);
 
   const loadOrders = useCallback(async () => {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
+    if (!token) { window.location.href = '/login'; return; }
     const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (!res.ok) return;
