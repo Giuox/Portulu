@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 type MenuItem = { id: number; name: string; price: number; category: string };
+type Zone = { name: string; delivery_fee: number };
 
 export default function RestaurantMenuPage() {
   const params = useParams<{ id: string }>();
@@ -11,13 +12,14 @@ export default function RestaurantMenuPage() {
   const [cart, setCart] = useState<{ id: number; name: string; price: number; quantity: number }[]>([]);
   const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
 
-  async function loadMenu() {
-    const res = await fetch(`/api/restaurants/${restaurantId}/menu`);
-    const data = await res.json();
-    if (!res.ok) { console.error(data.error); return; }
-    setItems(data);
-  }
-  useEffect(() => { loadMenu(); }, [restaurantId]);
+  useEffect(() => {
+    (async () => {
+      const res = await fetch(`/api/restaurants/${restaurantId}/menu`);
+      const data = (await res.json()) as MenuItem[];
+      if (!res.ok) { console.error((data as unknown as { error?: string })?.error); return; }
+      setItems(data);
+    })();
+  }, [restaurantId]);
 
   function addToCart(i: MenuItem) {
     setCart(prev => {
@@ -31,12 +33,12 @@ export default function RestaurantMenuPage() {
   }
 
   const subtotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart]);
-  const [deliveryZone, setDeliveryZone] = useState<string>('Scicli Centro');
+  const [deliveryZone] = useState<string>('Scicli Centro');
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   useEffect(() => {
     // Fetch zone to compute fee
-    fetch('/api/zones').then(r => r.json()).then((zones) => {
-      const z = zones.find((z: any) => z.name === deliveryZone);
+    fetch('/api/zones').then(r => r.json()).then((zones: Zone[]) => {
+      const z = zones.find((z) => z.name === deliveryZone);
       setDeliveryFee(z ? Number(z.delivery_fee) : 0);
     });
   }, [deliveryZone]);
