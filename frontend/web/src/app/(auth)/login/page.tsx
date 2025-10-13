@@ -14,8 +14,9 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || 'Errore login');
       localStorage.setItem('portulu_token', data.token);
       window.location.href = '/';
-    } catch (e: any) {
-      alert(e.message);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Errore login';
+      alert(message);
     } finally {
       setLoading(false);
     }
