@@ -9,6 +9,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { authHeaders } = await import('@/lib/csrf');
+      // Preflight GET to set CSRF cookie via middleware
+      try { await fetch('/api/profile'); } catch {}
       const res = await fetch('/api/auth/login', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ email, password }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Errore login');
