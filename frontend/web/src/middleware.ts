@@ -23,7 +23,7 @@ export function middleware(req: NextRequest) {
   const isApi = url.pathname.startsWith('/api/');
   if (!isApi) return NextResponse.next();
 
-  const ip = req.ip || req.headers.get('x-forwarded-for') || 'unknown';
+  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
   const key = `${ip}:${url.pathname}:${req.method}`;
   if (!rateLimit(key)) {
     return new NextResponse(JSON.stringify({ error: 'Rate limit exceeded' }), {

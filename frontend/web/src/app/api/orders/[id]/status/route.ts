@@ -13,7 +13,7 @@ function getBearerToken(req: NextRequest): string | null {
   return type?.toLowerCase() === 'bearer' ? token || null : null;
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const token = getBearerToken(req);
   if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
   const { data: user, error: getUserError } = await supabaseServer.auth.getUser(token);
@@ -23,7 +23,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const parsed = UpdateStatusSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
 
-  const orderId = Number(params.id);
+  const { id } = await context.params;
+  const orderId = Number(id);
   const { error } = await supabaseServer.from('orders').update({ status: parsed.data.status }).eq('id', orderId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ message: 'Status aggiornato' });
