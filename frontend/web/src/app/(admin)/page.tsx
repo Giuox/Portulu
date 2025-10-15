@@ -2,25 +2,22 @@
 import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
-  const token = undefined;
-  type Order = { id: string; order_number: string | number; status: string; total: number };
-  type Restaurant = { id: string; name: string; min_order?: number };
-  type Profile = { id: string; role: string; rider_available?: boolean };
+  const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
+  const [orders, setOrders] = useState<any[]>([]);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [riders, setRiders] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [riders, setRiders] = useState<Profile[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      const [ordersRes, restaurantsRes] = await Promise.all([
-        fetch('/api/orders'),
-        fetch('/api/restaurants')
-      ]);
-      const ordersJson = (await ordersRes.json()) as Order[];
-      const restaurantsJson = (await restaurantsRes.json()) as Restaurant[];
-      setOrders(ordersRes.ok ? ordersJson : []);
-      setRestaurants(restaurantsRes.ok ? restaurantsJson : []);
+  async function loadData() {
+    if (!token) { window.location.href = '/(auth)/login'; return; }
+    const [ordersRes, restaurantsRes] = await Promise.all([
+      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/restaurants')
+    ]);
+    const orders = await ordersRes.json();
+    const restaurants = await restaurantsRes.json();
+    setOrders(ordersRes.ok ? orders : []);
+    setRestaurants(restaurantsRes.ok ? restaurants : []);
 
       // Load profiles to derive riders
       const profilesRes = await fetch('/api/admin/profiles', { headers: { Authorization: `Bearer ${token}` } });
