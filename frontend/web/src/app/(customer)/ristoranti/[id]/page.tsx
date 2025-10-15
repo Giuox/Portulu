@@ -3,21 +3,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 type MenuItem = { id: number; name: string; price: number; category: string };
+type Zone = { name: string; delivery_fee: number };
 
 export default function RestaurantMenuPage() {
   const params = useParams<{ id: string }>();
   const restaurantId = Number(params.id);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<{ id: number; name: string; price: number; quantity: number }[]>([]);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
+  const token = undefined;
 
-  async function loadMenu() {
-    const res = await fetch(`/api/restaurants/${restaurantId}/menu`);
-    const data = await res.json();
-    if (!res.ok) { console.error(data.error); return; }
-    setItems(data);
-  }
-  useEffect(() => { loadMenu(); }, [restaurantId]);
+  useEffect(() => {
+    (async () => {
+      const res = await fetch(`/api/restaurants/${restaurantId}/menu`);
+      const data = (await res.json()) as MenuItem[];
+      if (!res.ok) { console.error((data as unknown as { error?: string })?.error); return; }
+      setItems(data);
+    })();
+  }, [restaurantId]);
 
   function addToCart(i: MenuItem) {
     setCart(prev => {
@@ -31,18 +33,17 @@ export default function RestaurantMenuPage() {
   }
 
   const subtotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart]);
-  const [deliveryZone, setDeliveryZone] = useState<string>('Scicli Centro');
+  const [deliveryZone] = useState<string>('Scicli Centro');
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
   useEffect(() => {
     // Fetch zone to compute fee
-    fetch('/api/zones').then(r => r.json()).then((zones) => {
-      const z = zones.find((z: any) => z.name === deliveryZone);
+    fetch('/api/zones').then(r => r.json()).then((zones: Zone[]) => {
+      const z = zones.find((z) => z.name === deliveryZone);
       setDeliveryFee(z ? Number(z.delivery_fee) : 0);
     });
   }, [deliveryZone]);
 
   async function placeOrder() {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
     const body = {
       restaurant_id: restaurantId,
       items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, quantity: c.quantity })),
@@ -57,7 +58,7 @@ export default function RestaurantMenuPage() {
       notes: ''
     };
     const { authHeaders } = await import('@/lib/csrf');
-    const res = await fetch('/api/orders', { method: 'POST', headers: authHeaders(token || undefined), body: JSON.stringify(body) });
+    const res = await fetch('/api/orders', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) { alert(data.error || 'Errore ordine'); return; }
     window.location.href = `/tracking/${encodeURIComponent(data.orderNumber)}`;

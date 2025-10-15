@@ -10,6 +10,22 @@ create table if not exists public.profiles (
   created_at timestamp with time zone default now()
 );
 
+-- Automatically create a profile when a new auth user is created
+create or replace function public.handle_new_auth_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, name, phone, role)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)), null, 'customer')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_auth_user();
+
 create table if not exists public.restaurants (
   id bigserial primary key,
   user_id uuid not null references public.profiles(id) on delete cascade,

@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "APPINSIGHTS_INSTRUMENTATIONKEY": "",
+    "PGHOST": "localhost",
+    "PGPORT": "5432",
+    "PGDATABASE": "portulu",
+    "PGUSER": "postgres",
+    "PGPASSWORD": "postgres",
+    "JWT_AUDIENCE": "portulu-api",
+    "JWT_ISSUER": "https://login.microsoftonline.com/{tenantid}/v2.0",
+    "ALLOWED_ORIGINS": "http://localhost:3000"
+  }
+}
+

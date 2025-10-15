@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
-function getBearerToken(req: NextRequest): string | null {
+function getToken(req: NextRequest): string | null {
+  const cookie = req.cookies.get('auth_token')?.value;
+  if (cookie) return cookie;
   const auth = req.headers.get('authorization');
   if (!auth) return null;
   const [type, token] = auth.split(' ');
@@ -9,7 +11,7 @@ function getBearerToken(req: NextRequest): string | null {
 }
 
 export async function GET(req: NextRequest) {
-  const token = getBearerToken(req);
+  const token = getToken(req);
   if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 });
   const { data: user, error: err } = await supabaseServer.auth.getUser(token);
   if (err || !user.user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });

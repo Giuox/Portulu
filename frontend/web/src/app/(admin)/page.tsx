@@ -2,34 +2,35 @@
 import { useEffect, useState } from 'react';
 
 export default function AdminDashboard() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
-  const [orders, setOrders] = useState<any[]>([]);
-  const [restaurants, setRestaurants] = useState<any[]>([]);
-  const [riders, setRiders] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  const token = undefined;
+  type Order = { id: string; order_number: string | number; status: string; total: number };
+  type Restaurant = { id: string; name: string; min_order?: number };
+  type Profile = { id: string; role: string; rider_available?: boolean };
 
-  async function loadData() {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
-    const [ordersRes, restaurantsRes] = await Promise.all([
-      fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/restaurants')
-    ]);
-    const orders = await ordersRes.json();
-    const restaurants = await restaurantsRes.json();
-    setOrders(ordersRes.ok ? orders : []);
-    setRestaurants(restaurantsRes.ok ? restaurants : []);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [riders, setRiders] = useState<Profile[]>([]);
 
-    // Load users and riders from profiles (admin should have DB access via RLS policy allowing admin)
-    const profilesRes = await fetch('/api/admin/profiles', { headers: { Authorization: `Bearer ${token}` } });
-    const profiles = profilesRes.ok ? await profilesRes.json() : [];
-    setUsers(profiles);
-    setRiders(profiles.filter((p: any) => p.role === 'rider'));
-  }
+  useEffect(() => {
+    (async () => {
+      const [ordersRes, restaurantsRes] = await Promise.all([
+        fetch('/api/orders'),
+        fetch('/api/restaurants')
+      ]);
+      const ordersJson = (await ordersRes.json()) as Order[];
+      const restaurantsJson = (await restaurantsRes.json()) as Restaurant[];
+      setOrders(ordersRes.ok ? ordersJson : []);
+      setRestaurants(restaurantsRes.ok ? restaurantsJson : []);
 
-  useEffect(() => { loadData(); }, []);
+      // Load profiles to derive riders
+      const profilesRes = await fetch('/api/admin/profiles', { headers: { Authorization: `Bearer ${token}` } });
+      const profilesJson = profilesRes.ok ? ((await profilesRes.json()) as Profile[]) : [];
+      setRiders(profilesJson.filter((p) => p.role === 'rider'));
+    })();
+  }, [token]);
 
-  const inProgress = orders.filter(o => ['new','preparing','ready','delivering'].includes(o.status));
-  const completedToday = orders.filter(o => o.status === 'delivered');
+  const inProgress = orders.filter((o) => ['new','preparing','ready','delivering'].includes(o.status));
+  const completedToday = orders.filter((o) => o.status === 'delivered');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -54,7 +55,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-xl shadow p-4">
             <h2 className="font-semibold mb-3">📦 Ordini recenti</h2>
             <div className="space-y-2 max-h-[400px] overflow-auto">
-              {orders.slice(0, 20).map((o) => (
+              {orders.slice(0, 20).map((o: Order) => (
                 <div key={o.id} className="flex items-center justify-between border-b pb-2">
                   <div>#{o.order_number} • {o.status}</div>
                   <div className="text-sm text-gray-600">€{Number(o.total).toFixed(2)}</div>
@@ -65,7 +66,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-xl shadow p-4">
             <h2 className="font-semibold mb-3">🍽️ Ristoranti</h2>
             <ul className="space-y-2 max-h-[400px] overflow-auto">
-              {restaurants.map((r) => (
+              {restaurants.map((r: Restaurant) => (
                 <li key={r.id} className="flex items-center justify-between border-b pb-2">
                   <div>{r.name}</div>
                   <div className="text-sm text-gray-600">Min €{Number(r.min_order || 0).toFixed(2)}</div>

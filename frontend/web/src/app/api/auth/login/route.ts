@@ -19,7 +19,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Credenziali non valide' }, { status: 401 });
   }
   const { access_token } = data.session;
-  return NextResponse.json({ token: access_token, userId: data.user.id, email: data.user.email });
+  const res = NextResponse.json({ ok: true, userId: data.user.id, email: data.user.email });
+  res.cookies.set('auth_token', access_token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7
+  });
+  return res;
 }
 
 

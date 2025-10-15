@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Order = {
   id: number;
@@ -11,17 +11,16 @@ type Order = {
 };
 
 export default function RiderPage() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
+  const token = undefined;
   const [available, setAvailable] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  async function loadOrders() {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
-    const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
+  const loadOrders = useCallback(async () => {
+    const res = await fetch('/api/orders');
     const data = await res.json();
     if (!res.ok) { console.error(data.error); return; }
     setOrders(data);
-  }
+  }, [token]);
 
   async function saveAvailability(next: boolean) {
     if (!token) return;
@@ -30,28 +29,27 @@ export default function RiderPage() {
     if (res.ok) setAvailable(next);
   }
 
-  async function takeOrder(orderId: number) {
-    if (!token) return;
+  const takeOrder = useCallback(async (orderId: number) => {
     const { authHeaders } = await import('@/lib/csrf');
-    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: authHeaders(token || undefined), body: JSON.stringify({ status: 'delivering' }) });
+    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'delivering' }) });
     await loadOrders();
-  }
+  }, [loadOrders]);
 
-  async function completeOrder(orderId: number) {
-    if (!token) return;
+  const completeOrder = useCallback(async (orderId: number) => {
     const { authHeaders } = await import('@/lib/csrf');
-    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: authHeaders(token || undefined), body: JSON.stringify({ status: 'delivered' }) });
+    await fetch(`/api/orders/${orderId}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'delivered' }) });
     await loadOrders();
-  }
+  }, [loadOrders]);
 
   useEffect(() => {
     loadOrders();
+    let unsub: (() => void) | undefined;
     (async () => {
       const { subscribeOrders } = await import('@/lib/realtime');
-      const unsub = subscribeOrders(loadOrders);
-      return () => unsub();
+      unsub = subscribeOrders(loadOrders);
     })();
-  }, []);
+    return () => { if (unsub) unsub(); };
+  }, [loadOrders]);
 
   const ready = orders.filter(o => o.status === 'ready');
   const delivering = orders.filter(o => o.status === 'delivering');

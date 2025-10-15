@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Order = {
   id: number;
@@ -19,13 +19,26 @@ type Order = {
 export default function RistorantePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('portulu_token') : null;
+  const token = undefined;
+  const [hasRestaurant, setHasRestaurant] = useState<boolean | null>(null);
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [minOrder, setMinOrder] = useState<number>(0);
 
-  async function loadOrders() {
-    if (!token) { window.location.href = '/(auth)/login'; return; }
+  const loadOrders = useCallback(async () => {
+    // cookie-based auth: server will redirect unauthenticated
+    // Check if restaurant exists for this user
+    if (hasRestaurant === null) {
+      const meRes = await fetch('/api/profile');
+      const me = meRes.ok ? await meRes.json() : null;
+      const listRes = await fetch('/api/restaurants');
+      const list = listRes.ok ? await listRes.json() as Array<{ user_id: string }>: [];
+      const owned = list.find((r) => r.user_id === me?.id);
+      setHasRestaurant(Boolean(owned));
+    }
     setLoading(true);
     try {
-      const res = await fetch('/api/orders', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch('/api/orders');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Errore caricamento ordini');
       setOrders(data);
@@ -34,7 +47,7 @@ export default function RistorantePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [token, hasRestaurant]);
 
   async function updateOrderStatus(id: number, status: Order['status']) {
     if (!token) return;
@@ -47,16 +60,49 @@ export default function RistorantePage() {
 
   useEffect(() => {
     loadOrders();
+    let unsub: (() => void) | undefined;
     (async () => {
       const { subscribeOrders } = await import('@/lib/realtime');
-      const unsub = subscribeOrders(loadOrders);
-      return () => unsub();
+      unsub = subscribeOrders(loadOrders);
     })();
-  }, []);
+    return () => { if (unsub) unsub(); };
+  }, [loadOrders]);
 
   const newOrders = orders.filter(o => o.status === 'new');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
   const readyOrders = orders.filter(o => o.status === 'ready');
+
+  if (hasRestaurant === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-xl mx-auto bg-white rounded-xl shadow p-6">
+          <h1 className="text-xl font-bold mb-4">Configura il tuo Ristorante</h1>
+          <div className="space-y-3">
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome" className="w-full border rounded-lg p-3" />
+            <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Categoria" className="w-full border rounded-lg p-3" />
+            <input value={minOrder} onChange={e => setMinOrder(Number(e.target.value))} type="number" step="0.01" placeholder="Ordine minimo" className="w-full border rounded-lg p-3" />
+            <button onClick={async () => {
+              // Preflight to set CSRF
+              try { await fetch('/api/zones'); } catch {}
+              const { authHeaders } = await import('@/lib/csrf');
+              const res = await fetch('/api/restaurants', {
+                method: 'POST',
+                headers: { ...authHeaders(token || undefined), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, category, min_order: Number(minOrder) })
+              });
+              if (res.ok) {
+                setHasRestaurant(true);
+                await loadOrders();
+              } else {
+                const d = await res.json().catch(() => ({}));
+                alert(d.error || 'Errore creazione ristorante');
+              }
+            }} className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold">Crea Ristorante</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">

@@ -1,0 +1,48 @@
+name: CI/CD - Staging
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build web
+        working-directory: ./Portulu/frontend/web
+        run: |
+          npm ci
+          npm run build
+      - name: Build functions
+        working-directory: ./Portulu/backend
+        run: |
+          npm ci
+          npm run build
+      - name: Deploy Staging SWA
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_TOKEN_STAGING }}
+          action: upload
+          app_location: Portulu/frontend/web
+          api_location: Portulu/backend
+          output_location: .next
+          production_branch: develop
+        env:
+          NEXT_PUBLIC_API_BASE: /api
+          PGHOST: ${{ secrets.STAGING_PGHOST }}
+          PGPORT: ${{ secrets.STAGING_PGPORT }}
+          PGDATABASE: ${{ secrets.STAGING_PGDATABASE }}
+          PGUSER: ${{ secrets.STAGING_PGUSER }}
+          PGPASSWORD: ${{ secrets.STAGING_PGPASSWORD }}
+          STORAGE_ACCOUNT_NAME: ${{ secrets.STAGING_STORAGE_ACCOUNT_NAME }}
+          STORAGE_ACCOUNT_KEY: ${{ secrets.STAGING_STORAGE_ACCOUNT_KEY }}
+          EVENT_GRID_TOPIC_ENDPOINT: ${{ secrets.STAGING_EVENT_GRID_TOPIC_ENDPOINT }}
+          EVENT_GRID_TOPIC_KEY: ${{ secrets.STAGING_EVENT_GRID_TOPIC_KEY }}
+          APPINSIGHTS_INSTRUMENTATIONKEY: ${{ secrets.STAGING_APPINSIGHTS_INSTRUMENTATIONKEY }}
+

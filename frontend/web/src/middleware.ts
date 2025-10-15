@@ -21,6 +21,24 @@ function rateLimit(key: string): boolean {
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const isApi = url.pathname.startsWith('/api/');
+
+  // Basic role-based guard for private pages using presence of an auth cookie.
+  // In production, integrate Azure AD B2C and validate tokens server-side.
+  const protectedPaths = [
+    '/profile',
+    '/rider',
+    '/ristorante',
+    '/(admin)'
+  ];
+  const isProtectedPage = protectedPaths.some((p) => url.pathname.startsWith(p));
+  if (!isApi && isProtectedPage) {
+    const hasAuth = Boolean(req.cookies.get('id_token')?.value || req.cookies.get('portulu_session')?.value);
+    if (!hasAuth) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', url.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
   if (!isApi) return NextResponse.next();
 
   const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
@@ -60,7 +78,7 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*']
+  matcher: ['/api/:path*', '/profile', '/rider', '/ristorante', '/(admin)']
 };
 
 
